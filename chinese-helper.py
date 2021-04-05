@@ -7,6 +7,7 @@ import json
 import sqlite3
 import os 
 import time
+from site_parser import parse_weibo_url, parse_wechat_url
 
 DB_NAME = "bot.db"
 def init_db():
@@ -38,16 +39,16 @@ def get_prefix(client, message):
     connect.close()
     return p
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# logging.basicConfig(level=logging.DEBUG,
+#                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # client = discord.Client()
-bot = commands.Bot(command_prefix= (get_prefix),)
+bot = commands.Bot(command_prefix= (get_prefix), )
 
 @commands.command(name='changeprefix', aliases=['cp'], brief='Change command prefix of the bot.')
 @commands.has_permissions(administrator=True)
 async def change_prefix(ctx, prefix=''):
-    if prefix is '':
+    if prefix == '':
         await ctx.send("You should add the prefix you want after ths command.")
     else:
         save_prefix(ctx.guild.id, prefix)
@@ -71,12 +72,18 @@ async def shici(ctx):
 async def on_ready():
     print('We have logged in as {0.user}'.format(bot))
 
-# @bot.event
-# async def on_message(message):
-#     if message.content.startswith('$hello'):
-#         await message.channel.send('Hello!')
-#     else:
-#         await bot.process_commands(message)
+@bot.event
+async def on_message(message):
+    if message.content.startswith('https://mp.weixin.qq.com/s'):
+        url = message.content.split(' ')[0]
+        title, content = parse_wechat_url(url)
+        await message.channel.send(content)
+    elif message.content.startswith('https://m.weibo.cn/'):
+        url = message.content.split(' ')[0]
+        web_url = parse_weibo_url(url)
+        await message.channel.send(web_url)
+    else:
+        await bot.process_commands(message)
 
 # bot.run(discord_bot_token)
 
