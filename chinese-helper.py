@@ -7,6 +7,8 @@ import json
 import sqlite3
 import os 
 import time
+from zhconv import convert
+
 from site_parser import parse_weibo_url, parse_wechat_url
 
 DB_NAME = "bot.db"
@@ -58,14 +60,18 @@ bot.add_command(change_prefix)
 
 
 @bot.command(name='一言', aliases=['yiyan', 'yy'], brief='Show a simple sentece.')
-async def yiyan(ctx):
+async def yiyan(ctx, *args):
     msg = requests.get('https://v1.hitokoto.cn/?encode=text').text
+    if len(args) > 0 and args[0] == 'f':
+        msg = convert(msg, 'zh-hant')
     await ctx.send(msg)
 
 @bot.command(name='诗词', aliases=['shici', 'sc'], brief='Show a sentence of a poetry.')
-async def shici(ctx):
+async def shici(ctx, *args):
     res_json = json.loads(requests.get('https://v1.jinrishici.com/all').text)
     msg = "{}\n——{} {}".format(res_json['content'], res_json['origin'], res_json['author'])
+    if len(args) > 0 and args[0] == 'f':
+        msg = convert(msg, 'zh-hant')
     await ctx.send(msg)
 
 @bot.event
@@ -85,10 +91,11 @@ async def on_message(message):
     else:
         await bot.process_commands(message)
 
-# bot.run(discord_bot_token)
+
 
 if __name__ == '__main__':
     init_db()
     bot.run(chinese_helper_token)
+    # bot.run(discord_bot_token)
     # print(get_prefix('test'))
     

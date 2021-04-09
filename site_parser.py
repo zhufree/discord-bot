@@ -8,7 +8,6 @@ def parse_weibo_url(url):
     bid = re.search(r'\"bid\":\s\"(.*)\"', doc).group(1)
     uid = re.search(r'\"uid\":\s(.*)', doc).group(1)
     web_url = 'https://weibo.com/{}/{}'.format(uid, bid)
-    print(web_url)
     return web_url
 
 
