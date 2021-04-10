@@ -47,6 +47,24 @@ def get_prefix(client, message):
 # client = discord.Client()
 bot = commands.Bot(command_prefix= (get_prefix), )
 
+@bot.event
+async def on_ready():
+    print('We have logged in as {0.user}'.format(bot))
+
+@bot.event
+async def on_message(message):
+    if message.content.startswith('https://mp.weixin.qq.com/s'):
+        url = message.content.split(' ')[0]
+        title, content = parse_wechat_url(url)
+        await message.channel.send(content)
+    elif message.content.startswith('https://m.weibo.cn/'):
+        url = message.content.split(' ')[0]
+        web_url = parse_weibo_url(url)
+        await message.channel.send(web_url)
+    else:
+        await bot.process_commands(message)
+
+
 @commands.command(name='changeprefix', aliases=['cp'], brief='Change command prefix of the bot.')
 @commands.has_permissions(administrator=True)
 async def change_prefix(ctx, prefix=''):
@@ -74,27 +92,64 @@ async def shici(ctx, *args):
         msg = convert(msg, 'zh-hant')
     await ctx.send(msg)
 
-@bot.event
-async def on_ready():
-    print('We have logged in as {0.user}'.format(bot))
 
-@bot.event
-async def on_message(message):
-    if message.content.startswith('https://mp.weixin.qq.com/s'):
-        url = message.content.split(' ')[0]
-        title, content = parse_wechat_url(url)
-        await message.channel.send(content)
-    elif message.content.startswith('https://m.weibo.cn/'):
-        url = message.content.split(' ')[0]
-        web_url = parse_weibo_url(url)
-        await message.channel.send(web_url)
-    else:
-        await bot.process_commands(message)
+@bot.command(name='热搜', aliases=['resou', 'rs'], brief='Show weibo hot rank.')
+async def resou(ctx, *args):
+    res_json = json.loads(requests.get('https://api.oioweb.cn/api/summary.php').text)
+    title_list = [i['title'] for i in res_json]
+    count = 5
+    page_index = 0
+    msg = '\n'.join(title_list[page_index*count:(page_index+1)*count])
+    if len(args) > 0 and args[0] == 'f':
+        msg = convert(msg, 'zh-hant')
+    message = await ctx.send(msg)
+    prev_ic = "⬅️"
+    next_ic = "➡️"
+    await message.add_reaction(prev_ic)
+    await message.add_reaction(next_ic)
+
+    valid_reactions = [prev_ic, next_ic]
+
+    def check(reaction, user):
+        return user == ctx.author and str(reaction.emoji) in valid_reactions
+
+    async def reset_reaction():
+        await message.clear_reactions()
+        await message.add_reaction(prev_ic)
+        await message.add_reaction(next_ic)
+
+    reaction, user = await bot.wait_for('reaction_add', timeout=30.0, check=check)
+    while reaction != None:
+        if str(reaction.emoji) == next_ic:
+            if page_index >= 10: 
+                page_index = 0
+            else:
+                page_index += 1
+        else:
+            if page_index <= 0: 
+                page_index = 0
+            else:
+                page_index -= 1
+
+        if (page_index+1)*count < len(title_list):
+            msg = '\n'.join(title_list[page_index*count:(page_index+1)*count])
+        else:
+            msg = '\n'.join(title_list[page_index*count:])
+        if len(args) > 0 and args[0] == 'f':
+            msg = convert(msg, 'zh-hant')
+        await message.edit(content=msg)
+        await reset_reaction()
+        reaction, user = await bot.wait_for('reaction_add', timeout=30.0, check=check)
 
 
+def test():
+    res_json = json.loads(requests.get('https://api.oioweb.cn/api/summary.php').text)
+    title_list = [i['title'] for i in res_json]
+    print(len(title_list))
 
 if __name__ == '__main__':
-    init_db()
+    # test()
+    # init_db()
     bot.run(chinese_helper_token)
     # bot.run(discord_bot_token)
     # print(get_prefix('test'))
