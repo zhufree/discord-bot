@@ -9,7 +9,7 @@ import os
 import time
 from zhconv import convert
 
-from site_parser import parse_weibo_url, parse_wechat_url
+from site_parser import parse_weibo_url, parse_wechat_url, parse_jjwxc_url
 
 DB_NAME = "bot.db"
 def init_db():
@@ -61,6 +61,21 @@ async def on_message(message):
         url = message.content.split(' ')[0]
         web_url = parse_weibo_url(url)
         await message.channel.send(web_url)
+    elif message.content.startswith('http://www.jjwxc.net/onebook.php?novelid='):
+        url = message.content.split(' ')[0]
+        novel_info = parse_jjwxc_url(url)
+        embed = discord.Embed(
+            title = novel_info['title'],
+            description=novel_info['summary'],
+            url=url
+        )
+        embed.set_author(name=novel_info['author'])
+        embed.add_field(name="tags",value=novel_info['tags'])
+        embed.add_field(name="status",value=novel_info['status'])
+        embed.add_field(name="other data",value=novel_info['other_info'])
+        embed.set_thumbnail(url=novel_info['cover'])
+        embed.set_footer(text='powered by CNYuriTranslation')
+        await message.channel.send(embed=embed)
     else:
         await bot.process_commands(message)
 
