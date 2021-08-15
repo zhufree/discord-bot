@@ -11,7 +11,7 @@ import time
 from zhconv import convert
 import emoji
 
-from site_parser import parse_weibo_url, parse_wechat_url, parse_jjwxc_url, translate_msg
+from site_parser import parse_weibo_m_url, parse_weibo_url, parse_wechat_url, parse_jjwxc_url, translate_msg
 
 DB_NAME = "bot.db"
 def init_db():
@@ -72,14 +72,38 @@ async def on_message(message):
                 icon_url=detail['head']
             )
             await message.channel.send(embed=embed)
+    elif 'https://weibo.com/' in message.content:
+        urls = re.findall(r'https://weibo.com/\d+/\S+', message.content)
+        for url in urls:
+            detail = parse_weibo_url(url)
+            if detail != None:
+                embed = discord.Embed(
+                    title=detail['title'],
+                    description=detail['content'],
+                    url=url,
+                    color=5763719
+                )
+                if len(detail['imgs']) > 0:
+                    if len(detail['imgs']) > 1:
+                        embed.set_thumbnail(url=detail['imgs'][0])
+                        embed.set_image(url=detail['imgs'][1])
+                    else:
+                        embed.set_image(url=detail['imgs'][0])
+                embed.set_author(
+                    name=detail['author'],
+                    icon_url=detail['head']
+                )
+                await message.channel.send(embed=embed)
+                if detail['video_url'] != None:
+                    await message.channel.send(detail['video_url'])
     elif 'https://m.weibo.cn/' in message.content:
         urls = re.findall(r'https://m.weibo.cn/\d+/\d+', message.content) + re.findall(r'https://m.weibo.cn/status/\d+', message.content)
         for url in urls:
-            detail = parse_weibo_url(url)
+            detail = parse_weibo_m_url(url)
             embed = discord.Embed(
                 title=detail['title'],
                 description=detail['content'],
-                url=url,
+                url=detail['web_url'],
                 color=5763719
             )
             if len(detail['pics']) > 0:
@@ -87,7 +111,7 @@ async def on_message(message):
                     embed.set_thumbnail(url=detail['pics'][0])
                     embed.set_image(url=detail['pics'][1])
                 else:
-                    embed.set_image(url=detail['pics'][1])
+                    embed.set_image(url=detail['pics'][0])
             embed.set_author(
                 name=detail['author'],
                 url=detail['author_url'],

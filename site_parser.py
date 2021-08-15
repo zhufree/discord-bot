@@ -5,7 +5,7 @@ from googletrans import Translator
 
 translator = Translator()
 
-def parse_weibo_url(url):
+def parse_weibo_m_url(url):
     html_content = requests.get(url).text
     doc = pq(html_content)
     bid = re.search(r'\"bid\":\s\"(.*)\"', html_content).group(1)
@@ -30,6 +30,41 @@ def parse_weibo_url(url):
         'pics': large_pics,
         'video_url': video_url
     }
+
+
+def parse_weibo_url(url):
+    res = requests.get(url, headers={
+        'Host': 'weibo.com',
+        'Cookie': 'SINAGLOBAL=3195376581295.619.1629021665163; ULV=1629021665207:1:1:1:3195376581295.619.1629021665163:; SUBP=0033WrSXqPxfM72-Ws9jqgMF55529P9D9WFU0qlXF-MD4FdyiOvX8XzY; SUB=_2AkMXyYMQf8NxqwJRmPESxW3qb4h0yAzEieKhlXLLJRMxHRl-yT9jql04tRB6PEmt_1-7hJ1pSq-FqHDd8OxSkNvAL3Zg; _s_tentry=-; Apache=3195376581295.619.1629021665163',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36'
+    })
+    html_content = res.text
+    title = pq(html_content)('title').text()
+    contents = re.findall(r'"html":"(.*)"', html_content)
+    if len(contents) > 0:
+        doc = pq(contents[-1].replace('\n', '').replace('\r', '').replace(r'>\s+<', '')\
+            .replace('\\n', '').replace('\\', ''))
+        print(doc.html())
+        content = doc('.WB_text').text()
+        author = doc('.WB_text').attr('nick-name')
+        head = doc('img.W_face_radius').attr('src')
+        imgs = ['https:' + i.attr('src') for i in list(doc('li>img').items())]
+        video_search = re.search(r'f.video(\S+)&amp;cover', doc.html())
+        video_url = None
+        if video_search != None:
+            video_url = 'https://f.video' + video_search.group(1)\
+                .replace('%2F', '/').replace('%3F', '?').replace('%26', '&')\
+                .replace('%3D', '=').replace('%2C', ',')
+        return {
+            'title': title,
+            'author': author,
+            'head': head,
+            'content': content.replace('\n', ''),
+            'imgs': imgs,
+            'video_url': video_url
+        }
+    else:
+        return None
 
 
 def parse_wechat_url(url):
@@ -81,8 +116,10 @@ def translate_msg(msg):
     return translator.translate(msg).text
 
 if __name__ == '__main__':
-    print(parse_weibo_url('https://m.weibo.cn/status/4669070841222847'))
-    # print(parse_weibo_url('https://m.weibo.cn/status/4669872175319179'))
+    # print(parse_weibo_m_url('https://m.weibo.cn/status/4669070841222847'))
+    # print(parse_weibo_url('https://weibo.com/7224928421/KsYQA587l'))
+    print(parse_weibo_url('https://weibo.com/3947333230/KtA9KdESb'))
     # print(parse_wechat_url('https://mp.weixin.qq.com/s/YwHhX-A8tRJ37RCNHqLxdQ '))
     # print(parse_jjwxc_url('http://www.jjwxc.net/onebook.php?novelid=4472787'))
     # print(translate_msg('你好'))
+#//wx3.sinaimg.cn/mw690/eb47866ely1gthl2bh3o5j21h90u07g4.jpg
