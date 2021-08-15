@@ -3,24 +3,52 @@ import requests
 import re
 from googletrans import Translator
 
+translator = Translator()
 
 def parse_weibo_url(url):
-    doc = requests.get(url).text
-    bid = re.search(r'\"bid\":\s\"(.*)\"', doc).group(1)
-    uid = re.search(r'\"uid\":\s(.*)', doc).group(1)
+    html_content = requests.get(url).text
+    doc = pq(html_content)
+    bid = re.search(r'\"bid\":\s\"(.*)\"', html_content).group(1)
+    uid = re.search(r'\"uid\":\s(.*)', html_content).group(1)
     web_url = 'https://weibo.com/{}/{}'.format(uid, bid)
-    return web_url
+    content = pq(re.search(r'\"text\":\s\"(.*)\"', html_content).group(1)).text()
+    if (len(content) > 500):
+        content = content[0:500]+'...'
+    pics = re.findall(r'\"url\":\s\"(.*)\"', html_content)
+    large_pics = []
+    for i in pics:
+        if 'large' in i:
+            large_pics.append(i)
+    video_url = re.search(r'\"mp4_720p_mp4\":\s\"(.*)\"', html_content).group(1) if 'mp4_720p_mp4' in html_content else None
+    return {
+        'url': web_url,
+        'title': re.search(r'\"status_title\":\s\"(.*)\"', html_content).group(1),
+        'author': re.search(r'\"screen_name\":\s\"(.*)\"', html_content).group(1),
+        'author_head': re.search(r'\"profile_image_url\":\s\"(.*)\"', html_content).group(1),
+        'author_url': re.search(r'\"profile_url\":\s\"(.*)\"', html_content).group(1),
+        'content': content,
+        'pics': large_pics,
+        'video_url': video_url
+    }
 
 
 def parse_wechat_url(url):
     doc = pq(url)
-    title =doc('#activity-name').text()
-    content = doc('#js_content').text().replace('\n\n\n', '\n').strip()[0:200]+'...'
-    return (title, content)
+    author = doc('#profileBt > a').text()
+    head = list(doc('img').items())[1].attr('data-src')
+    img = doc('img.rich_pages:first').attr('data-src')
+    title = doc('#activity-name').text()
+    content = doc('#js_content').text().replace('\n\n\n', '\n').strip()[0:500]+'...'
+    return {
+        'title': title,
+        'author': author,
+        'head': head,
+        'img': img,
+        'content': content
+    }
 
 
 def parse_jjwxc_url(url):
-    translator = Translator()
     res = requests.get(url)
     res.encoding = 'gb2312'
     doc = pq(res.text)
@@ -43,22 +71,18 @@ def parse_jjwxc_url(url):
         'author': '{}({})'.format(author, author_en),
         'status': '{}/{}'.format(status, status_en),
         'other_info': 'word count:{}\ncollected count: {}'.format(wordCount.replace('字', 'chars'), collectedCount),
-        'tags': '{}\n{}'.format(tags, tags_en),
-        'summary': '{}\n{}'.format(summary, summary_en),
+        'tags': '{}'.format(tags_en),
+        'summary': '{}'.format(summary_en),
         'cover': cover
     }
-    
-    #     'title': '{}/{}'.format(title, title_en),
-    #     'author': '{}'.format(author),
-    #     'status': '{}'.format(status),
-    #     'other_info': 'word count:{}/collected count: {}'.format(wordCount, collectedCount),
-    #     'tags': '{}'.format(tags),
-    #     'summary': summary,
-    #     'cover': cover
-    # }
 
+
+def translate_msg(msg):
+    return translator.translate(msg).text
 
 if __name__ == '__main__':
-    # parser_weibo_url('https://m.weibo.cn/7462816220/4622537638545785')
-    # parse_wechat_url('https://mp.weixin.qq.com/s/YwHhX-A8tRJ37RCNHqLxdQ')
-    print(parse_jjwxc_url('http://www.jjwxc.net/onebook.php?novelid=4472787'))
+    print(parse_weibo_url('https://m.weibo.cn/status/4669070841222847'))
+    # print(parse_weibo_url('https://m.weibo.cn/status/4669872175319179'))
+    # print(parse_wechat_url('https://mp.weixin.qq.com/s/YwHhX-A8tRJ37RCNHqLxdQ '))
+    # print(parse_jjwxc_url('http://www.jjwxc.net/onebook.php?novelid=4472787'))
+    # print(translate_msg('你好'))

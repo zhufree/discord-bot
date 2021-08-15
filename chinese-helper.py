@@ -5,11 +5,13 @@ from config import *
 import requests
 import json
 import sqlite3
-import os 
+import os
+import re
 import time
 from zhconv import convert
+import emoji
 
-from site_parser import parse_weibo_url, parse_wechat_url, parse_jjwxc_url
+from site_parser import parse_weibo_url, parse_wechat_url, parse_jjwxc_url, translate_msg
 
 DB_NAME = "bot.db"
 def init_db():
@@ -46,6 +48,7 @@ def get_prefix(client, message):
 
 # client = discord.Client()
 bot = commands.Bot(command_prefix= (get_prefix), )
+last_url = ''
 
 @bot.event
 async def on_ready():
@@ -53,31 +56,81 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    if message.content.startswith('https://mp.weixin.qq.com/s'):
+    if 'https://mp.weixin.qq.com/s' in message.content:
+        urls = re.findall(r'https://mp\.weixin\.qq\.com/s/\S+', message.content)
+        for url in urls:
+            detail = parse_wechat_url(url)
+            embed = discord.Embed(
+                title=detail['title'],
+                description=detail['content'],
+                url=url,
+                color=5763719
+            )
+            embed.set_image(url=detail['img'])
+            embed.set_author(
+                name=detail['author'],
+                icon_url=detail['head']
+            )
+            await message.channel.send(embed=embed)
+    elif 'https://m.weibo.cn/' in message.content:
+        urls = re.findall(r'https://m.weibo.cn/\d+/\d+', message.content) + re.findall(r'https://m.weibo.cn/status/\d+', message.content)
+        for url in urls:
+            detail = parse_weibo_url(url)
+            embed = discord.Embed(
+                title=detail['title'],
+                description=detail['content'],
+                url=url,
+                color=5763719
+            )
+            if len(detail['pics']) > 0:
+                if len(detail['pics']) > 1:
+                    embed.set_thumbnail(url=detail['pics'][0])
+                    embed.set_image(url=detail['pics'][1])
+                else:
+                    embed.set_image(url=detail['pics'][1])
+            embed.set_author(
+                name=detail['author'],
+                url=detail['author_url'],
+                icon_url=detail['author_head']
+            )
+            await message.channel.send(embed=embed)
+            if detail['video_url'] != None:
+                await message.channel.send(detail['video_url'])
+    elif 'http://www.jjwxc.net/onebook.php?novelid=' in message.content:
+        urls = re.findall(r'http://www\.jjwxc\.net/onebook\.php\?novelid=\d+', message.content)
+        for url in urls:
+            if url == last_url:
+                pass
+            else:
+                last_url = url
+                novel_info = parse_jjwxc_url(url)
+                embed = discord.Embed(
+                    title = novel_info['title'],
+                    description=novel_info['summary'],
+                    url=url
+                )
+                embed.set_author(name=novel_info['author'])
+                embed.add_field(name="tags",value=novel_info['tags'])
+                embed.add_field(name="status",value=novel_info['status'])
+                embed.add_field(name="other data",value=novel_info['other_info'])
+                embed.set_thumbnail(url=novel_info['cover'])
+                embed.set_footer(text='powered by CNYuriTranslation')
+                await message.channel.send(embed=embed)
+    elif message.content.startswith('https://www.mtlnovel.com/'):
         url = message.content.split(' ')[0]
-        title, content = parse_wechat_url(url)
-        await message.channel.send(content)
-    elif message.content.startswith('https://m.weibo.cn/'):
-        url = message.content.split(' ')[0]
-        web_url = parse_weibo_url(url)
-        await message.channel.send(web_url)
-    elif message.content.startswith('http://www.jjwxc.net/onebook.php?novelid='):
-        url = message.content.split(' ')[0]
-        novel_info = parse_jjwxc_url(url)
-        embed = discord.Embed(
-            title = novel_info['title'],
-            description=novel_info['summary'],
-            url=url
-        )
-        embed.set_author(name=novel_info['author'])
-        embed.add_field(name="tags",value=novel_info['tags'])
-        embed.add_field(name="status",value=novel_info['status'])
-        embed.add_field(name="other data",value=novel_info['other_info'])
-        embed.set_thumbnail(url=novel_info['cover'])
-        embed.set_footer(text='powered by CNYuriTranslation')
-        await message.channel.send(embed=embed)
     else:
         await bot.process_commands(message)
+
+@bot.event
+async def on_reaction_add(reaction, user):
+    emoji_str = emoji.demojize(reaction.emoji)
+    if emoji_str == ':United_States:' or emoji_str == ':United_Kingdom:':
+        msg = translate_msg(reaction.message.content)
+        embed = discord.Embed(
+            description=msg,
+            color=5763719
+        )
+        await reaction.message.channel.send(embed=embed)
 
 
 @commands.command(name='changeprefix', aliases=['cp'], brief='Change command prefix of the bot.')
