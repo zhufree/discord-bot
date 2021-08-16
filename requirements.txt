@@ -1,0 +1,8 @@
+discord.py==1.6.0
+requests==2.24.0
+googletrans==3.0.0
+pyquery==1.4.3
+zhconv==1.4.1
+emoji==1.4.2
+discord==1.7.3
+telegram==0.0.1

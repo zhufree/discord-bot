@@ -94,8 +94,6 @@ async def on_message(message):
                     icon_url=detail['head']
                 )
                 await message.channel.send(embed=embed)
-                if detail['video_url'] != None:
-                    await message.channel.send(detail['video_url'])
     elif 'https://m.weibo.cn/' in message.content:
         urls = re.findall(r'https://m.weibo.cn/\d+/\d+', message.content) + re.findall(r'https://m.weibo.cn/status/\d+', message.content)
         for url in urls:
@@ -103,7 +101,7 @@ async def on_message(message):
             embed = discord.Embed(
                 title=detail['title'],
                 description=detail['content'],
-                url=detail['web_url'],
+                url=detail['url'],
                 color=5763719
             )
             if len(detail['pics']) > 0:
@@ -118,8 +116,6 @@ async def on_message(message):
                 icon_url=detail['author_head']
             )
             await message.channel.send(embed=embed)
-            if detail['video_url'] != None:
-                await message.channel.send(detail['video_url'])
     elif 'http://www.jjwxc.net/onebook.php?novelid=' in message.content:
         urls = re.findall(r'http://www\.jjwxc\.net/onebook\.php\?novelid=\d+', message.content)
         for url in urls:
@@ -147,14 +143,15 @@ async def on_message(message):
 
 @bot.event
 async def on_reaction_add(reaction, user):
-    emoji_str = emoji.demojize(reaction.emoji)
-    if emoji_str == ':United_States:' or emoji_str == ':United_Kingdom:':
-        msg = translate_msg(reaction.message.content)
-        embed = discord.Embed(
-            description=msg,
-            color=5763719
-        )
-        await reaction.message.channel.send(embed=embed)
+    if type(reaction.emoji) == str:
+        emoji_str = emoji.demojize(reaction.emoji)
+        if emoji_str == ':United_States:' or emoji_str == ':United_Kingdom:':
+            msg = translate_msg(reaction.message.content)
+            embed = discord.Embed(
+                description=msg,
+                color=5763719
+            )
+            await reaction.message.channel.send(embed=embed)
 
 
 @commands.command(name='changeprefix', aliases=['cp'], brief='Change command prefix of the bot.')

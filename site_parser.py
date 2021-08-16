@@ -12,8 +12,8 @@ def parse_weibo_m_url(url):
     uid = re.search(r'\"uid\":\s(.*)', html_content).group(1)
     web_url = 'https://weibo.com/{}/{}'.format(uid, bid)
     content = pq(re.search(r'\"text\":\s\"(.*)\"', html_content).group(1)).text()
-    if (len(content) > 500):
-        content = content[0:500]+'...'
+    if (len(content) > 1000):
+        content = content[0:1000]+'...'
     pics = re.findall(r'\"url\":\s\"(.*)\"', html_content)
     large_pics = []
     for i in pics:
