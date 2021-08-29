@@ -44,11 +44,10 @@ def parse_weibo_url(url):
     if len(contents) > 0:
         doc = pq(contents[-1].replace('\n', '').replace('\r', '').replace(r'>\s+<', '')\
             .replace('\\n', '').replace('\\', ''))
-        print(doc.html())
         content = doc('.WB_text').text()
         author = doc('.WB_text').attr('nick-name')
         head = doc('img.W_face_radius').attr('src')
-        imgs = ['https:' + i.attr('src') for i in list(doc('li>img').items())]
+        imgs = ['https:' + i.attr('src').replace('thumb150', 'large') for i in list(doc('li>img').items())]
         video_search = re.search(r'f.video(\S+)&amp;cover', doc.html())
         video_url = None
         if video_search != None:
