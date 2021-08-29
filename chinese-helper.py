@@ -56,6 +56,8 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
+    if message.author.bot:
+      return
     if 'https://mp.weixin.qq.com/s' in message.content:
         urls = re.findall(r'https://mp\.weixin\.qq\.com/s/\S+', message.content)
         for url in urls:
@@ -83,17 +85,18 @@ async def on_message(message):
                     url=url,
                     color=5763719
                 )
-                if len(detail['imgs']) > 0:
-                    if len(detail['imgs']) > 1:
-                        embed.set_thumbnail(url=detail['imgs'][0])
-                        embed.set_image(url=detail['imgs'][1])
-                    else:
-                        embed.set_image(url=detail['imgs'][0])
                 embed.set_author(
                     name=detail['author'],
                     icon_url=detail['head']
                 )
-                await message.channel.send(embed=embed)
+                if len(detail['pics']) > 0:
+                    embed.set_image(url=detail['pics'][0])
+                await message.channel.send(url + ' send by ' + message.author.mention, embed=embed)
+                if len(detail['pics']) > 2:
+                    if len(detail['pics']) < 5:
+                        await message.channel.send('\n'.join(detail['pics'][1:]))
+                    else:
+                        await message.channel.send('\n'.join(detail['pics'][1:5]))
     elif 'https://m.weibo.cn/' in message.content:
         urls = re.findall(r'https://m.weibo.cn/\d+/\d+', message.content) + re.findall(r'https://m.weibo.cn/status/\d+', message.content)
         for url in urls:
@@ -104,18 +107,20 @@ async def on_message(message):
                 url=detail['url'],
                 color=5763719
             )
-            if len(detail['pics']) > 0:
-                if len(detail['pics']) > 1:
-                    embed.set_thumbnail(url=detail['pics'][0])
-                    embed.set_image(url=detail['pics'][1])
-                else:
-                    embed.set_image(url=detail['pics'][0])
             embed.set_author(
                 name=detail['author'],
                 url=detail['author_url'],
                 icon_url=detail['author_head']
             )
-            await message.channel.send(embed=embed)
+            if len(detail['pics']) > 0:
+                embed.set_image(url=detail['pics'][0])
+            await message.channel.send(detail['url'] + ' send by ' + message.author.mention, embed=embed)
+            if len(detail['pics']) > 2:
+                if len(detail['pics']) < 5:
+                    await message.channel.send('\n'.join(detail['pics'][1:]))
+                else:
+                    await message.channel.send('\n'.join(detail['pics'][1:5]))
+
     elif 'http://www.jjwxc.net/onebook.php?novelid=' in message.content:
         urls = re.findall(r'http://www\.jjwxc\.net/onebook\.php\?novelid=\d+', message.content)
         for url in urls:

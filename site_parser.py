@@ -60,7 +60,7 @@ def parse_weibo_url(url):
             'author': author,
             'head': head,
             'content': content.replace('\n', ''),
-            'imgs': imgs,
+            'pics': imgs,
             'video_url': video_url
         }
     else:
