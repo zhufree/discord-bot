@@ -235,6 +235,10 @@ async def resou(ctx, *args):
         await reset_reaction()
         reaction, user = await bot.wait_for('reaction_add', timeout=30.0, check=check)
 
+@bot.command(name='mint', brief='Mint a X Rabbit.')
+async def mint(ctx, *args):
+    await ctx.send('test')
+
 
 def test():
     res_json = json.loads(requests.get('https://api.oioweb.cn/api/summary.php').text)
