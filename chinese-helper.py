@@ -55,8 +55,9 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
+    global last_url
     if message.author.bot:
-      return
+        return
     if 'https://mp.weixin.qq.com/s' in message.content:
         urls = re.findall(r'https://mp\.weixin\.qq\.com/s/\S+', message.content)
         for url in urls:
@@ -114,14 +115,14 @@ async def on_message(message):
             if len(detail['pics']) > 0:
                 embed.set_image(url=detail['pics'][0])
             await message.channel.send(detail['url'] + ' send by ' + message.author.mention, embed=embed)
-            if len(detail['pics']) > 2:
+            if len(detail['pics']) >= 2:
                 if len(detail['pics']) < 5:
                     await message.channel.send('\n'.join(detail['pics'][1:]))
                 else:
                     await message.channel.send('\n'.join(detail['pics'][1:5]))
 
-    elif 'http://www.jjwxc.net/onebook.php?novelid=' in message.content:
-        urls = re.findall(r'http://www\.jjwxc\.net/onebook\.php\?novelid=\d+', message.content)
+    elif 'https://www.jjwxc.net/onebook.php?novelid=' in message.content:
+        urls = re.findall(r'https://www\.jjwxc\.net/onebook\.php\?novelid=\d+', message.content)
         for url in urls:
             if url == last_url:
                 pass

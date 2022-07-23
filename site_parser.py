@@ -87,26 +87,28 @@ def parse_jjwxc_url(url):
     res.encoding = 'gb2312'
     doc = pq(res.text)
     title = doc('span[itemprop=articleSection]').text()
-    title_en = translator.translate(title).text
+    # title_en = translator.translate(title).text
     author = doc('span[itemprop=author]').text()
-    author_en = translator.translate(author).text
+    # author_en = translator.translate(author).text
     status = doc('span[itemprop=updataStatus]').text()
-    status_en = translator.translate(status).text
+    # status_en = translator.translate(status).text
     wordCount = doc('span[itemprop=wordCount]').text()
     collectedCount = doc('span[itemprop=collectedCount]').text()
     summary = doc('div[itemprop=description]').text().replace('~', '').replace('||', '|')
-    summary_en = translator.translate(summary).text.replace('~', '').replace('||', '|')
+    # summary_en = translator.translate(summary).text.replace('~', '').replace('||', '|')
     tags = doc('div.smallreadbody>span>a').text().replace(' ', '/')
     cover = doc('img.noveldefaultimage').attr('src')
-    tags_en = translator.translate(tags).text
+    # tags_en = translator.translate(tags).text
     return {
-    # {
-        'title': '{}({})'.format(title, title_en),
-        'author': '{}({})'.format(author, author_en),
-        'status': '{}/{}'.format(status, status_en),
+        # 'title': '{}({})'.format(title, title_en),
+        # 'author': '{}({})'.format(author, author_en),
+        # 'status': '{}/{}'.format(status, status_en),
+        'title': title,
+        'author': author,
+        'status': status,
         'other_info': 'word count:{}\ncollected count: {}'.format(wordCount.replace('字', 'chars'), collectedCount),
-        'tags': '{}'.format(tags_en),
-        'summary': '{}'.format(summary_en),
+        'tags': tags,
+        'summary': summary,
         'cover': cover
     }
 
@@ -117,8 +119,7 @@ def translate_msg(msg):
 if __name__ == '__main__':
     # print(parse_weibo_m_url('https://m.weibo.cn/status/4669070841222847'))
     # print(parse_weibo_url('https://weibo.com/7224928421/KsYQA587l'))
-    print(parse_weibo_url('https://weibo.com/3947333230/KtA9KdESb'))
+    # print(parse_weibo_url('https://weibo.com/3947333230/KtA9KdESb'))
     # print(parse_wechat_url('https://mp.weixin.qq.com/s/YwHhX-A8tRJ37RCNHqLxdQ '))
-    # print(parse_jjwxc_url('http://www.jjwxc.net/onebook.php?novelid=4472787'))
+    print(parse_jjwxc_url('https://www.jjwxc.net/onebook.php?novelid=4472787'))
     # print(translate_msg('你好'))
-#//wx3.sinaimg.cn/mw690/eb47866ely1gthl2bh3o5j21h90u07g4.jpg
