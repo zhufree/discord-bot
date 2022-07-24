@@ -2,7 +2,7 @@ import discord
 import logging
 from discord.ext import commands
 from config import *
-import requests
+import httpx
 import json
 import sqlite3
 import os, re, random
@@ -197,14 +197,14 @@ bot.add_command(change_prefix)
 
 @bot.command(name='一言', aliases=['yiyan', 'yy'], brief='Show a simple sentece.')
 async def yiyan(ctx, *args):
-    msg = requests.get('https://v1.hitokoto.cn/?encode=text').text
+    msg = httpx.get('https://v1.hitokoto.cn/?encode=text').text
     if len(args) > 0 and args[0] == 'f':
         msg = convert(msg, 'zh-hant')
     await ctx.send(msg)
 
 @bot.command(name='诗词', aliases=['shici', 'sc'], brief='Show a sentence of a poetry.')
 async def shici(ctx, *args):
-    res_json = json.loads(requests.get('https://v1.jinrishici.com/all').text)
+    res_json = json.loads(httpx.get('https://v1.jinrishici.com/all').text)
     msg = "{}\n——{} {}".format(res_json['content'], res_json['origin'], res_json['author'])
     if len(args) > 0 and args[0] == 'f':
         msg = convert(msg, 'zh-hant')
@@ -213,18 +213,23 @@ async def shici(ctx, *args):
 
 @bot.command(name='热搜', aliases=['resou', 'rs'], brief='Show weibo hot rank.')
 async def resou(ctx, *args):
-    res_json = json.loads(requests.get('https://api.oioweb.cn/api/summary.php').text)
-    title_list = [i['title'] for i in res_json]
-    count = 5
-    page_index = 0
-    msg = '\n'.join(title_list[page_index*count:(page_index+1)*count])
-    if len(args) > 0 and args[0] == 'f':
-        msg = convert(msg, 'zh-hant')
-    message = await ctx.send(msg)
-    prev_ic = "⬅️"
-    next_ic = "➡️"
-    await message.add_reaction(prev_ic)
-    await message.add_reaction(next_ic)
+    res = httpx.get('https://weibo.com/ajax/side/hotSearch')
+    res_json = res.json()
+    if res_json['ok'] == 1:
+        real_time = res_json['data']['realtime']
+        title_list = [f"{i['note']}" for i in real_time if 'note' in i]
+        count = 5
+        page_index = 0
+        msg = '\n'.join(title_list[page_index*count:(page_index+1)*count])
+        if len(args) > 0 and args[0] == 'f':
+            msg = convert(msg, 'zh-hant')
+        message = await ctx.send(msg)
+        prev_ic = "⬅️"
+        next_ic = "➡️"
+        await message.add_reaction(prev_ic)
+        await message.add_reaction(next_ic)
+    else:
+        return
 
     valid_reactions = [prev_ic, next_ic]
 
@@ -289,7 +294,7 @@ async def mint(ctx, *args):
 
 
 def test():
-    res_json = json.loads(requests.get('https://api.oioweb.cn/api/summary.php').text)
+    res_json = json.loads(httpx.get('https://api.oioweb.cn/api/summary.php').text)
     title_list = [i['title'] for i in res_json]
     print(len(title_list))
 

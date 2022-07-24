@@ -1,12 +1,11 @@
 from pyquery import PyQuery as pq
-import requests
+import httpx
 import re
-from googletrans import Translator
-
-translator = Translator()
+from config import weibo_cookies
 
 def parse_weibo_m_url(url):
-    html_content = requests.get(url).text
+    html_content = httpx.get(url).text
+    print(html_content)
     doc = pq(html_content)
     bid = re.search(r'\"bid\":\s\"(.*)\"', html_content).group(1)
     uid = re.search(r'\"uid\":\s(.*)', html_content).group(1)
@@ -33,33 +32,29 @@ def parse_weibo_m_url(url):
 
 
 def parse_weibo_url(url):
-    res = requests.get(url, headers={
-        'Host': 'weibo.com',
-        'Cookie': 'SINAGLOBAL=3195376581295.619.1629021665163; ULV=1629021665207:1:1:1:3195376581295.619.1629021665163:; SUBP=0033WrSXqPxfM72-Ws9jqgMF55529P9D9WFU0qlXF-MD4FdyiOvX8XzY; SUB=_2AkMXyYMQf8NxqwJRmPESxW3qb4h0yAzEieKhlXLLJRMxHRl-yT9jql04tRB6PEmt_1-7hJ1pSq-FqHDd8OxSkNvAL3Zg; _s_tentry=-; Apache=3195376581295.619.1629021665163',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36'
-    })
-    html_content = res.text
-    title = pq(html_content)('title').text()
-    contents = re.findall(r'"html":"(.*)"', html_content)
-    if len(contents) > 0:
-        doc = pq(contents[-1].replace('\n', '').replace('\r', '').replace(r'>\s+<', '')\
-            .replace('\\n', '').replace('\\', ''))
-        content = doc('.WB_text').text()
-        author = doc('.WB_text').attr('nick-name')
-        head = doc('img.W_face_radius').attr('src')
-        imgs = ['https:' + i.attr('src').replace('thumb150', 'large') for i in list(doc('li>img').items())]
-        video_search = re.search(r'f.video(\S+)&amp;cover', doc.html())
-        video_url = None
-        if video_search != None:
-            video_url = 'https://f.video' + video_search.group(1)\
-                .replace('%2F', '/').replace('%3F', '?').replace('%26', '&')\
-                .replace('%3D', '=').replace('%2C', ',')
+    weibo_id = re.split(r'[?#]', url)[0].split('/')[-1]
+    detail_url = 'https://weibo.com/ajax/statuses/show?id=' + weibo_id
+    res = httpx.get(detail_url)
+    detail_json = res.json()
+    pics = []
+    video_url = ''
+    if detail_json['ok'] == 1:
+        if 'pic_infos' in detail_json:
+            for pic_info in detail_json['pic_infos'].values():
+                pics.append(pic_info['large']['url'])
+        if 'page_info' in detail_json and 'media_info' in detail_json['page_info']:
+            video_url = detail_json['page_info']['media_info']['h5_url']
+        if 'continue_tag' in detail_json and weibo_cookies != '':
+            expand_res = httpx.get('https://weibo.com/ajax/statuses/longtext?id=' + weibo_id, headers={'Cookie': weibo_cookies})
+            expand_json = expand_res.json()
+            if expand_json['ok'] == 1:
+                long_content = expand_json['data']['longTextContent']
         return {
-            'title': title,
-            'author': author,
-            'head': head,
-            'content': content.replace('\n', ''),
-            'pics': imgs,
+            'title': '',
+            'author': detail_json['user']['screen_name'],
+            'head': detail_json['user']['profile_image_url'],
+            'content': long_content if long_content != None else detail_json['text_raw'],
+            'pics': pics,
             'video_url': video_url
         }
     else:
@@ -83,7 +78,7 @@ def parse_wechat_url(url):
 
 
 def parse_jjwxc_url(url):
-    res = requests.get(url)
+    res = httpx.get(url)
     res.encoding = 'gb2312'
     doc = pq(res.text)
     title = doc('span[itemprop=articleSection]').text()
@@ -117,7 +112,7 @@ header = {
 }
 
 def parse_douban_url(url):
-    res = requests.get(url, headers=header)
+    res = httpx.get(url, headers=header)
     doc = pq(res.text)
     imgs = doc('.topic-doc img').items()
     pics = []
