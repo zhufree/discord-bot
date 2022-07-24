@@ -112,6 +112,26 @@ def parse_jjwxc_url(url):
         'cover': cover
     }
 
+header = {
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'
+}
+
+def parse_douban_url(url):
+    res = requests.get(url, headers=header)
+    doc = pq(res.text)
+    imgs = doc('.topic-doc img').items()
+    pics = []
+    for i in imgs:
+        pics.append(i.attr('src'))
+    return {
+        'url': url,
+        'title': doc('.article h1').text(),
+        'content': doc('.topic-doc p').text(),
+        'time': doc('span.create-time').text(),
+        'author': doc('span.from').text(),
+        'author_pfp': doc('img.pil').attr('src'),
+        'pics': pics
+    }
 
 def translate_msg(msg):
     return translator.translate(msg).text
@@ -121,5 +141,6 @@ if __name__ == '__main__':
     # print(parse_weibo_url('https://weibo.com/7224928421/KsYQA587l'))
     # print(parse_weibo_url('https://weibo.com/3947333230/KtA9KdESb'))
     # print(parse_wechat_url('https://mp.weixin.qq.com/s/YwHhX-A8tRJ37RCNHqLxdQ '))
-    print(parse_jjwxc_url('https://www.jjwxc.net/onebook.php?novelid=4472787'))
+    # print(parse_jjwxc_url('https://www.jjwxc.net/onebook.php?novelid=4472787'))
     # print(translate_msg('你好'))
+    print(parse_douban_url('https://www.douban.com/group/topic/271430038/'))

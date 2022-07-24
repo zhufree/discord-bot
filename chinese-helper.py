@@ -10,7 +10,7 @@ import time
 from zhconv import convert
 import emoji
 
-from site_parser import parse_weibo_m_url, parse_weibo_url, parse_wechat_url, parse_jjwxc_url, translate_msg
+from site_parser import parse_weibo_m_url, parse_weibo_url, parse_wechat_url, parse_jjwxc_url, parse_douban_url, translate_msg
 
 DB_NAME = "bot.db"
 def init_db():
@@ -120,7 +120,6 @@ async def on_message(message):
                     await message.channel.send('\n'.join(detail['pics'][1:]))
                 else:
                     await message.channel.send('\n'.join(detail['pics'][1:5]))
-
     elif 'https://www.jjwxc.net/onebook.php?novelid=' in message.content:
         urls = re.findall(r'https://www\.jjwxc\.net/onebook\.php\?novelid=\d+', message.content)
         for url in urls:
@@ -143,6 +142,31 @@ async def on_message(message):
                 await message.channel.send(embed=embed)
     elif message.content.startswith('https://www.mtlnovel.com/'):
         url = message.content.split(' ')[0]
+    elif 'https://www.douban.com/group/topic/' in message.content:
+        urls = re.findall(r'https://www\.douban\.com/group/topic/\d+', message.content)
+        for url in urls:
+            if url == last_url:
+                pass
+            else:
+                last_url = url
+                douban_info = parse_douban_url(url)
+                embed = discord.Embed(
+                    title = douban_info['title'],
+                    description=douban_info['content'],
+                    url=url
+                )
+                embed.set_author(name=douban_info['author'])
+                embed.set_thumbnail(url=douban_info['author_pfp'])
+                embed.set_footer(text='powered by CNYuriTranslation')
+                if len(douban_info['pics']) > 0:
+                    embed.set_image(url=douban_info['pics'][0])
+                embed.add_field(name="time",value=douban_info['time'])
+                await message.channel.send(douban_info['url'] + ' send by ' + message.author.mention, embed=embed)
+                if len(douban_info['pics']) >= 2:
+                    if len(douban_info['pics']) < 5:
+                        await message.channel.send('\n'.join(douban_info['pics'][1:]))
+                    else:
+                        await message.channel.send('\n'.join(douban_info['pics'][1:5]))
     else:
         await bot.process_commands(message)
 
