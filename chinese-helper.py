@@ -91,8 +91,8 @@ async def on_message(message):
                 )
                 if len(detail['pics']) > 0:
                     embed.set_image(url=detail['pics'][0])
-                await message.channel.send(url + ' send by ' + message.author.mention, embed=embed)
-                if len(detail['pics']) > 2:
+                    await message.channel.send(url + ' send by ' + message.author.mention, embed=embed)
+                if len(detail['pics']) > 1:
                     if len(detail['pics']) < 5:
                         await message.channel.send('\n'.join(detail['pics'][1:]))
                     else:

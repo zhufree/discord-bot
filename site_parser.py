@@ -38,6 +38,7 @@ def parse_weibo_url(url):
     detail_json = res.json()
     pics = []
     video_url = ''
+    long_content = None
     if detail_json['ok'] == 1:
         if 'pic_infos' in detail_json:
             for pic_info in detail_json['pic_infos'].values():
