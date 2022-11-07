@@ -4,31 +4,10 @@ import re
 from config import weibo_cookies
 
 def parse_weibo_m_url(url):
-    html_content = httpx.get(url).text
-    print(html_content)
-    doc = pq(html_content)
-    bid = re.search(r'\"bid\":\s\"(.*)\"', html_content).group(1)
-    uid = re.search(r'\"uid\":\s(.*)', html_content).group(1)
-    web_url = 'https://weibo.com/{}/{}'.format(uid, bid)
-    content = pq(re.search(r'\"text\":\s\"(.*)\"', html_content).group(1)).text()
-    if (len(content) > 1000):
-        content = content[0:1000]+'...'
-    pics = re.findall(r'\"url\":\s\"(.*)\"', html_content)
-    large_pics = []
-    for i in pics:
-        if 'large' in i:
-            large_pics.append(i)
-    video_url = re.search(r'\"mp4_720p_mp4\":\s\"(.*)\"', html_content).group(1) if 'mp4_720p_mp4' in html_content else None
-    return {
-        'url': web_url,
-        'title': re.search(r'\"status_title\":\s\"(.*)\"', html_content).group(1),
-        'author': re.search(r'\"screen_name\":\s\"(.*)\"', html_content).group(1),
-        'author_head': re.search(r'\"profile_image_url\":\s\"(.*)\"', html_content).group(1),
-        'author_url': re.search(r'\"profile_url\":\s\"(.*)\"', html_content).group(1),
-        'content': content,
-        'pics': large_pics,
-        'video_url': video_url
-    }
+    mid = url.split('/')[-1]
+    uid = url.split('/')[-2] # uid可能没有
+    web_url = 'https://weibo.com/{}/{}'.format(uid, mid)
+    return parse_weibo_url(web_url)
 
 
 def parse_weibo_url(url):
@@ -52,6 +31,7 @@ def parse_weibo_url(url):
                 long_content = expand_json['data']['longTextContent']
         return {
             'title': '',
+            'url': url,
             'author': detail_json['user']['screen_name'],
             'head': detail_json['user']['profile_image_url'],
             'content': long_content if long_content != None else detail_json['text_raw'],

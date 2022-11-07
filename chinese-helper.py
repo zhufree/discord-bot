@@ -109,8 +109,7 @@ async def on_message(message):
             )
             embed.set_author(
                 name=detail['author'],
-                url=detail['author_url'],
-                icon_url=detail['author_head']
+                icon_url=detail['head']
             )
             if len(detail['pics']) > 0:
                 embed.set_image(url=detail['pics'][0])
