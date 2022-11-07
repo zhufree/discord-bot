@@ -26,9 +26,14 @@ def parse_weibo_url(url):
             video_url = detail_json['page_info']['media_info']['h5_url']
         if 'continue_tag' in detail_json and weibo_cookies != '':
             expand_res = httpx.get('https://weibo.com/ajax/statuses/longtext?id=' + weibo_id, headers={'Cookie': weibo_cookies})
-            expand_json = expand_res.json()
-            if expand_json['ok'] == 1:
-                long_content = expand_json['data']['longTextContent']
+            try:
+                expand_json = expand_res.json()
+                if expand_json['ok'] == 1:
+                    long_content = expand_json['data']['longTextContent']
+            except Exception:
+                pass
+            finally:
+                pass
         return {
             'title': '',
             'url': url,
