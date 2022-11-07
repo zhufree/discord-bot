@@ -78,25 +78,24 @@ async def on_message(message):
         urls = re.findall(r'https://weibo.com/\d+/\S+', message.content)
         for url in urls:
             detail = parse_weibo_url(url)
-            if detail != None:
-                embed = discord.Embed(
-                    title=detail['title'],
-                    description=detail['content'],
-                    url=url,
-                    color=5763719
-                )
-                embed.set_author(
-                    name=detail['author'],
-                    icon_url=detail['head']
-                )
-                if len(detail['pics']) > 0:
-                    embed.set_image(url=detail['pics'][0])
-                    await message.channel.send(url + ' send by ' + message.author.mention, embed=embed)
-                if len(detail['pics']) > 1:
-                    if len(detail['pics']) < 5:
-                        await message.channel.send('\n'.join(detail['pics'][1:]))
-                    else:
-                        await message.channel.send('\n'.join(detail['pics'][1:5]))
+            embed = discord.Embed(
+                title=detail['title'],
+                description=detail['content'],
+                url=url,
+                color=5763719
+            )
+            embed.set_author(
+                name=detail['author'],
+                icon_url=detail['head']
+            )
+            if len(detail['pics']) > 0:
+                embed.set_image(url=detail['pics'][0])
+            await message.channel.send(url + ' send by ' + message.author.mention, embed=embed)
+            if len(detail['pics']) > 1:
+                if len(detail['pics']) < 5:
+                    await message.channel.send('\n'.join(detail['pics'][1:]))
+                else:
+                    await message.channel.send('\n'.join(detail['pics'][1:5]))
     elif 'https://m.weibo.cn/' in message.content:
         urls = re.findall(r'https://m.weibo.cn/\d+/\d+', message.content) + re.findall(r'https://m.weibo.cn/status/\d+', message.content)
         for url in urls:
