@@ -8,7 +8,7 @@ import sqlite3
 import os, re, random
 import time
 from zhconv import convert
-import emoji
+# import emoji
 
 from site_parser import parse_weibo_m_url, parse_weibo_url, parse_wechat_url, parse_jjwxc_url, parse_douban_url, translate_msg
 
@@ -45,8 +45,9 @@ def get_prefix(client, message):
 # logging.basicConfig(level=logging.DEBUG,
 #                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-# client = discord.Client()
-bot = commands.Bot(command_prefix= (get_prefix), )
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix= (get_prefix), intents=intents)
 last_url = ''
 
 @bot.event
@@ -168,17 +169,17 @@ async def on_message(message):
     else:
         await bot.process_commands(message)
 
-@bot.event
-async def on_reaction_add(reaction, user):
-    if type(reaction.emoji) == str:
-        emoji_str = emoji.demojize(reaction.emoji)
-        if emoji_str == ':United_States:' or emoji_str == ':United_Kingdom:':
-            msg = translate_msg(reaction.message.content)
-            embed = discord.Embed(
-                description=msg,
-                color=5763719
-            )
-            await reaction.message.channel.send(embed=embed)
+# @bot.event
+# async def on_reaction_add(reaction, user):
+#     if type(reaction.emoji) == str:
+#         emoji_str = emoji.demojize(reaction.emoji)
+#         if emoji_str == ':United_States:' or emoji_str == ':United_Kingdom:':
+#             msg = translate_msg(reaction.message.content)
+#             embed = discord.Embed(
+#                 description=msg,
+#                 color=5763719
+#             )
+#             await reaction.message.channel.send(embed=embed)
 
 
 @commands.command(name='changeprefix', aliases=['cp'], brief='Change command prefix of the bot.')
@@ -192,6 +193,11 @@ async def change_prefix(ctx, prefix=''):
 
 bot.add_command(change_prefix)
 
+@bot.command(name='test', aliases=['t'], brief='Show a sentence of a poetry.')
+async def test(ctx, *args):
+    file_path = 'test.mp3'
+    file = discord.File(file_path, filename='test.mp3')
+    await ctx.send("Here is your file:", file=file)
 
 @bot.command(name='一言', aliases=['yiyan', 'yy'], brief='Show a simple sentece.')
 async def yiyan(ctx, *args):
@@ -208,93 +214,6 @@ async def shici(ctx, *args):
         msg = convert(msg, 'zh-hant')
     await ctx.send(msg)
 
-
-@bot.command(name='热搜', aliases=['resou', 'rs'], brief='Show weibo hot rank.')
-async def resou(ctx, *args):
-    res = httpx.get('https://weibo.com/ajax/side/hotSearch')
-    res_json = res.json()
-    if res_json['ok'] == 1:
-        real_time = res_json['data']['realtime']
-        title_list = [f"{i['note']}" for i in real_time if 'note' in i]
-        count = 5
-        page_index = 0
-        msg = '\n'.join(title_list[page_index*count:(page_index+1)*count])
-        if len(args) > 0 and args[0] == 'f':
-            msg = convert(msg, 'zh-hant')
-        message = await ctx.send(msg)
-        prev_ic = "⬅️"
-        next_ic = "➡️"
-        await message.add_reaction(prev_ic)
-        await message.add_reaction(next_ic)
-    else:
-        return
-
-    valid_reactions = [prev_ic, next_ic]
-
-    def check(reaction, user):
-        return user == ctx.author and str(reaction.emoji) in valid_reactions
-
-    async def reset_reaction():
-        await message.clear_reactions()
-        await message.add_reaction(prev_ic)
-        await message.add_reaction(next_ic)
-
-    reaction, user = await bot.wait_for('reaction_add', timeout=30.0, check=check)
-    while reaction != None:
-        if str(reaction.emoji) == next_ic:
-            if page_index >= 10: 
-                page_index = 0
-            else:
-                page_index += 1
-        else:
-            if page_index <= 0: 
-                page_index = 0
-            else:
-                page_index -= 1
-
-        if (page_index+1)*count < len(title_list):
-            msg = '\n'.join(title_list[page_index*count:(page_index+1)*count])
-        else:
-            msg = '\n'.join(title_list[page_index*count:])
-        if len(args) > 0 and args[0] == 'f':
-            msg = convert(msg, 'zh-hant')
-        await message.edit(content=msg)
-        await reset_reaction()
-        reaction, user = await bot.wait_for('reaction_add', timeout=30.0, check=check)
-
-BOX_GIF_URL = 'https://p.qlogo.cn/hy_personal/3e28f14aa0516842a7556984f3d4eeea0d27b7d6546fb2980c3607c086b5debc/0.gif'
-
-@bot.command(name='mint', brief='Mint a X Rabbit.')
-async def mint(ctx, *args):
-    embed = discord.Embed(
-        title='Mint a X Rabbit',
-        url='https://opensea.io/collection/xrc',
-        color=5763719
-    )
-    embed.set_image(url=BOX_GIF_URL)
-    message = await ctx.reply(embed=embed)
-    reveal_ic = "🔄"
-    await message.add_reaction(reveal_ic)
-    def check(reaction, user):
-        return user == ctx.author and str(reaction.emoji) == reveal_ic
-
-    reaction, user = await bot.wait_for('reaction_add', check=check)
-    if reaction != None:
-        # reveal
-        randint = random.randint(0, 7502)
-        embed = discord.Embed(
-            title=f'X Rabbit#{randint}',
-            url=f'https://opensea.io/assets/0x534d37c630b7e4d2a6c1e064f3a2632739e9ee04/{randint}',
-            color=5763719
-        )
-        embed.set_image(url=f'https://xrcmeme.io/static/QmShUrXkgxjQ1eeCuo7hywsK42cGYj6KQ8N5XomM7d9A9M/{randint}.png')
-        await message.edit(embed=embed)
-
-
-def test():
-    res_json = json.loads(httpx.get('https://api.oioweb.cn/api/summary.php').text)
-    title_list = [i['title'] for i in res_json]
-    print(len(title_list))
 
 if __name__ == '__main__':
     # test()
