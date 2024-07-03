@@ -193,11 +193,6 @@ async def change_prefix(ctx, prefix=''):
 
 bot.add_command(change_prefix)
 
-@bot.command(name='test', aliases=['t'], brief='Show a sentence of a poetry.')
-async def test(ctx, *args):
-    file_path = 'test.mp3'
-    file = discord.File(file_path, filename='test.mp3')
-    await ctx.send("Here is your file:", file=file)
 
 @bot.command(name='一言', aliases=['yiyan', 'yy'], brief='Show a simple sentece.')
 async def yiyan(ctx, *args):
